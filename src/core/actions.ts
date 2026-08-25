@@ -54,14 +54,16 @@ export function resumeSession(session: SessionInfo): void {
     );
   }
   const binary = claudeBinary();
-  // A native executable (claude.exe) can be spawned directly; only a `.cmd` /
-  // `.bat` shim needs a shell to run through cmd.exe.
-  const needsShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(binary);
+  // On Windows, run through cmd.exe (`shell: true`). Spawning a native console
+  // executable directly with `shell: false` fails to hand the console input to
+  // the child, so Claude comes up unresponsive (keys and Ctrl+C appear dead).
+  // cmd.exe performs the console handoff reliably, which is what worked in the
+  // original implementation.
   const args = ['-r', session.id];
   const child = spawn(binary, args, {
     cwd,
     stdio: 'inherit',
-    shell: needsShell,
+    shell: process.platform === 'win32',
   });
   child.on('error', (err) => {
     console.error(`[csm] Failed to launch Claude: ${err.message}`);
