@@ -88,7 +88,7 @@ describe('TUI rendering (mock streams)', () => {
   it('renders the session list with titles', async () => {
     const stdout = new FakeStdout();
     const app = render(
-      <App initialIndex={index} scannedCount={0} onResume={() => {}} />,
+      <App initialIndex={index} scannedCount={0} />,
       { stdout, stdin: new FakeStdin() as never, exitOnCtrlC: false },
     );
     // Allow Ink to flush output.
