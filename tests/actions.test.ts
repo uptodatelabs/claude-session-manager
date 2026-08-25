@@ -54,6 +54,29 @@ describe('resumeSession', () => {
     const fakeSession = sessions[0]!;
     expect(() => resumeSession({ ...fakeSession, projectPath: 'Z:/nonexistent' })).toThrow();
   });
+
+  it('throws when resuming the currently-active session', () => {
+    const fakeSession = sessions[0]!;
+    process.env.CLAUDE_CODE_SESSION_ID = fakeSession.id;
+    try {
+      expect(() => resumeSession(fakeSession)).toThrow(/currently running/);
+    } finally {
+      delete process.env.CLAUDE_CODE_SESSION_ID;
+    }
+  });
+
+  it('allows resuming a session that is not active', () => {
+    const fakeSession = sessions[0]!;
+    process.env.CLAUDE_CODE_SESSION_ID = 'some-other-session-id';
+    try {
+      // Spawns, so must not throw synchronously for the path check.
+      expect(() => resumeSession({ ...fakeSession, projectPath: 'Z:/nonexistent' })).toThrow(
+        /does not exist/,
+      );
+    } finally {
+      delete process.env.CLAUDE_CODE_SESSION_ID;
+    }
+  });
 });
 
 describe('backup / restore', () => {

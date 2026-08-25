@@ -88,6 +88,9 @@ export function App({ initialIndex, scannedCount }: AppProps): React.ReactElemen
     [sessions, detailId],
   );
 
+  // The session Claude Code is currently writing, when csm runs inside Claude.
+  const activeId = process.env.CLAUDE_CODE_SESSION_ID;
+
   const selectedSession = sessionRows[cursor]?.session;
   // Flat index into `rows` (project headers + sessions) for windowing.
   const flatCursor = useMemo(() => {
@@ -214,7 +217,7 @@ export function App({ initialIndex, scannedCount }: AppProps): React.ReactElemen
 
       <Box flexGrow={1} flexDirection="column" paddingX={1}>
         {view === 'list' && (
-          <ListView rows={rows} cursor={flatCursor} selectedId={selectedSession?.id} />
+          <ListView rows={rows} cursor={flatCursor} selectedId={selectedSession?.id} activeId={activeId} />
         )}
         {view === 'detail' && detailSession && <DetailView session={detailSession} />}
         {view === 'stats' && <StatsView sessions={sessions} onBack={() => setView('list')} />}

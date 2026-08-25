@@ -16,10 +16,12 @@ interface ListViewProps {
   rows: Row[];
   cursor: number;
   selectedId?: string;
+  /** Session currently being written by Claude Code (shown as running). */
+  activeId?: string;
 }
 
 /** Render the windowed session list with project group headers. */
-export function ListView({ rows, cursor, selectedId }: ListViewProps): React.ReactElement {
+export function ListView({ rows, cursor, selectedId, activeId }: ListViewProps): React.ReactElement {
   const visible = useMemo(() => windowSlice(rows, cursor, WINDOW), [rows, cursor]);
 
   // Project slug -> session count, computed from the full row list.
@@ -54,6 +56,7 @@ export function ListView({ rows, cursor, selectedId }: ListViewProps): React.Rea
     }
     const s = row.session;
     const isSelected = s.id === selectedId;
+    const isRunning = activeId && s.id === activeId;
     return (
       <Box key={`s:${s.id}`} flexDirection="column">
         <Box paddingLeft={isSelected ? 0 : 1}>
@@ -61,11 +64,17 @@ export function ListView({ rows, cursor, selectedId }: ListViewProps): React.Rea
             {isSelected ? '▶ ' : '  '}
             {s.id.slice(0, 8)}  {s.title}
           </Text>
+          {isRunning && (
+            <Text color={theme.danger} bold>
+              {' '}[running]
+            </Text>
+          )}
         </Box>
         <Box paddingLeft={isSelected ? 4 : 5}>
           <Dim>
             {formatRelative(s.lastTime)} · {formatSize(s.size)}
             {s.gitBranch ? ` · ${s.gitBranch}` : ''}
+            {isRunning ? ' · (active session — cannot resume)' : ''}
           </Dim>
         </Box>
       </Box>

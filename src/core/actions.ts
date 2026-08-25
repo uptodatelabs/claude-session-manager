@@ -44,6 +44,28 @@ export function claudeBinary(): string {
  * Resume a session by spawning `claude --resume <id>` in the right directory.
  * The child process inherits stdio so the user interacts with Claude directly.
  */
+/** The session currently running when csm itself is launched inside Claude Code. */
+export function activeSessionId(): string | undefined {
+  return process.env.CLAUDE_CODE_SESSION_ID || undefined;
+}
+
+/**
+ * Build a clean environment for the spawned Claude, stripping Claude Code
+ * session context (session id, messaging socket, "child session" flags) that
+ * would otherwise tell the new Claude it is running inside an existing
+ * session and cause it to hang or misbehave.
+ */
+function cleanResumeEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value === undefined) continue;
+    if (key === 'CLAUDECODE' || key === 'AI_AGENT') continue;
+    if (key.startsWith('CLAUDE')) continue;
+    env[key] = value;
+  }
+  return env;
+}
+
 /**
  * Resume a session by spawning `claude --resume <id>` in the session's working
  * directory. The child inherits stdio, so Claude takes over the terminal.
@@ -53,6 +75,15 @@ export function claudeBinary(): string {
  * usually tearing the app down).
  */
 export function resumeSession(session: SessionInfo): Promise<void> {
+  const activeId = activeSessionId();
+  if (activeId && session.id === activeId) {
+    throw new Error(
+      'This session is the one currently running (Claude Code is writing it right now).\n' +
+        'Resuming it would make two processes write the same session file and hang.\n' +
+        'Pick a different (finished) session to resume.',
+    );
+  }
+
   const cwd = session.projectPath;
   if (!fs.existsSync(cwd)) {
     throw new Error(
@@ -70,6 +101,7 @@ export function resumeSession(session: SessionInfo): Promise<void> {
     cwd,
     stdio: 'inherit',
     shell: needsShell,
+    env: cleanResumeEnv(),
   });
 
   return new Promise<void>((resolve, reject) => {
