@@ -9,7 +9,7 @@ import { c, formatSize, formatTokens, formatRelative, formatDateTime, truncate }
 import { tokensForSessions, buildProjectStats, sumTotals } from './core/stats.js';
 import { resumeSession, deleteSession, listTrash, restoreFromTrash, purgeTrashEntry, backupSingleSession, backupSessions, restoreBackup, inspectBackup } from './core/actions.js';
 import { readLastMessages } from './core/reader.js';
-import { ensureStateDir } from './core/paths.js';
+import { ensureStateDir, claudeProjectsDir } from './core/paths.js';
 import type { SessionInfo } from './core/types.js';
 
 const require = createRequire(import.meta.url);
@@ -272,6 +272,7 @@ program
   .argument('<archive>', 'Path to a .tar.gz backup file')
   .option('--remap <path>', 'Remap session cwd paths to this directory')
   .option('--skip-existing', 'Skip files that already exist')
+  .option('-o, --output <dir>', 'Target projects directory', claudeProjectsDir())
   .option('--dry-run', 'Inspect the archive without restoring')
   .action(async (archive, opts) => {
     if (opts.dryRun) {
@@ -291,6 +292,7 @@ program
     const restored = await restoreBackup(archive, {
       remapCwd: opts.remap,
       skipExisting: opts.skipExisting,
+      outputDir: opts.output,
     });
     process.stdout.write(`\n  ${c.bold('Restored')} ${restored.length} session(s)\n`);
     for (const f of restored) {

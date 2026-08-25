@@ -47,7 +47,7 @@ npm run dev -- list
 | `csm trash purge <id>` | Permanently delete a trash entry |
 | `csm stats` | Aggregate token usage across sessions |
 | `csm backup <id> \| --project <slug> \| --all` | Create a `.tar.gz` archive |
-| `csm restore <file> [--remap <path>]` | Restore from a backup archive |
+| `csm restore <file> [--remap <path>] [-o <dir>]` | Restore from a backup archive |
 
 ### TUI Keybindings
 
@@ -109,7 +109,8 @@ new location, so `claude -r <id>` works correctly on the target machine.
 ```bash
 npm install
 npm run build
-npm test
+npm test      # unit tests (vitest)
+npm run e2e   # end-to-end verification of every CLI feature
 # or
 npm run dev -- list
 ```
