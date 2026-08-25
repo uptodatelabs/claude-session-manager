@@ -114,7 +114,8 @@ program
   .action(async (sessionId) => {
     const { index } = await loadFreshIndex();
     const session = findSession(index, sessionId);
-    process.stdout.write(`Resuming session ${session.id} in ${session.projectPath}...\n`);
+    const where = process.platform === 'win32' ? 'in a new terminal window' : '';
+    process.stdout.write(`Resuming session ${session.id} ${where} in ${session.projectPath}...\n`);
     resumeSession(session);
   });
 

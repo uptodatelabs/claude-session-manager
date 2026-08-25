@@ -41,8 +41,14 @@ export function claudeBinary(): string {
 }
 
 /**
- * Resume a session by spawning `claude --resume <id>` in the right directory.
- * The child process inherits stdio so the user interacts with Claude directly.
+ * Resume a session by running `claude --resume <id>` in the session's working
+ * directory.
+ *
+ * On Windows, Claude is opened in its own console window via `start`. Sharing
+ * csm's console makes the child unresponsive (keys and Ctrl+C appear dead) —
+ * console input handoff from a node parent to a native TUI child is unreliable
+ * regardless of shell mode. A dedicated window behaves exactly like typing
+ * `claude -r <id>` by hand, which is verified to work.
  */
 export function resumeSession(session: SessionInfo): void {
   const cwd = session.projectPath;
@@ -54,16 +60,24 @@ export function resumeSession(session: SessionInfo): void {
     );
   }
   const binary = claudeBinary();
-  // On Windows, run through cmd.exe (`shell: true`). Spawning a native console
-  // executable directly with `shell: false` fails to hand the console input to
-  // the child, so Claude comes up unresponsive (keys and Ctrl+C appear dead).
-  // cmd.exe performs the console handoff reliably, which is what worked in the
-  // original implementation.
   const args = ['-r', session.id];
+
+  if (process.platform === 'win32') {
+    // `start "title" /D <dir> <program> <args…>` opens a new console window.
+    // The quoted first argument is the window title. The directory must be a
+    // native backslash path — cmd's `start /D` silently fails on `C:/...`.
+    const nativeCwd = path.resolve(cwd);
+    spawn('cmd.exe', ['/c', 'start', '"Claude"', '/D', nativeCwd, binary, ...args], {
+      stdio: 'ignore',
+      detached: true,
+    }).unref();
+    return;
+  }
+
+  // POSIX: inheriting stdio hands the terminal over reliably.
   const child = spawn(binary, args, {
     cwd,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
   });
   child.on('error', (err) => {
     console.error(`[csm] Failed to launch Claude: ${err.message}`);
