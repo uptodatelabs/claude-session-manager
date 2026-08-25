@@ -44,15 +44,7 @@ export function claudeBinary(): string {
  * Resume a session by spawning `claude --resume <id>` in the right directory.
  * The child process inherits stdio so the user interacts with Claude directly.
  */
-/**
- * Resume a session by spawning `claude --resume <id>` in the session's working
- * directory. The child inherits stdio, so Claude takes over the terminal.
- *
- * Returns a promise that resolves once Claude exits, and rejects if Claude
- * cannot be spawned. The caller decides what happens next (for the TUI this is
- * usually tearing the app down).
- */
-export function resumeSession(session: SessionInfo): Promise<void> {
+export function resumeSession(session: SessionInfo): void {
   const cwd = session.projectPath;
   if (!fs.existsSync(cwd)) {
     throw new Error(
@@ -71,12 +63,12 @@ export function resumeSession(session: SessionInfo): Promise<void> {
     stdio: 'inherit',
     shell: needsShell,
   });
-
-  return new Promise<void>((resolve, reject) => {
-    child.on('error', (err) => {
-      reject(new Error(`Failed to launch Claude (${binary}): ${err.message}`));
-    });
-    child.on('exit', () => resolve());
+  child.on('error', (err) => {
+    console.error(`[csm] Failed to launch Claude: ${err.message}`);
+    process.exit(1);
+  });
+  child.on('exit', (code) => {
+    process.exit(code ?? 0);
   });
 }
 

@@ -6,7 +6,7 @@ import { DetailView } from './DetailView.js';
 import { StatsView } from './StatsView.js';
 import { Dim } from './Dim.js';
 import { theme } from './theme.js';
-import { deleteSession, resumeSession } from '../core/actions.js';
+import { deleteSession } from '../core/actions.js';
 import type { IndexData, SessionInfo } from '../core/types.js';
 
 export type View = 'list' | 'detail' | 'stats';
@@ -14,6 +14,7 @@ export type View = 'list' | 'detail' | 'stats';
 interface AppProps {
   initialIndex: IndexData;
   scannedCount: number;
+  onResume: (session: SessionInfo) => void;
 }
 
 /** Filter sessions by a case-insensitive query over common fields. */
@@ -64,8 +65,8 @@ export function windowSlice<T>(list: T[], cursor: number, size: number): T[] {
   return list.slice(start, start + size);
 }
 
-export function App({ initialIndex, scannedCount }: AppProps): React.ReactElement {
-  const { exit, suspendTerminal } = useApp();
+export function App({ initialIndex, scannedCount, onResume }: AppProps): React.ReactElement {
+  const { exit } = useApp();
   const [sessions, setSessions] = useState<SessionInfo[]>(() => Object.values(initialIndex.sessions));
   const [view, setView] = useState<View>('list');
   const [query, setQuery] = useState('');
@@ -125,26 +126,10 @@ export function App({ initialIndex, scannedCount }: AppProps): React.ReactElemen
     }
   }, [sessionRows, cursor, confirmDelete, flash]);
 
-  /**
-   * Resume the selected/detail session. Uses Ink's `suspendTerminal` — the
-   * official way to hand the terminal to a child process — which puts the
-   * console back in canonical mode and pauses Ink's input before Claude runs.
-   * When Claude exits we exit csm (rather than restoring the TUI).
-   */
-  const handleResume = useCallback(async () => {
+  const handleResume = useCallback(() => {
     const target = detailSession ?? sessionRows[cursor]?.session;
-    if (!target) return;
-    try {
-      await suspendTerminal(async () => {
-        await resumeSession(target);
-      });
-    } catch (err) {
-      console.error(`[csm] Cannot resume session: ${(err as Error).message}`);
-      exit(1);
-      return;
-    }
-    exit(0);
-  }, [detailSession, sessionRows, cursor, suspendTerminal, exit]);
+    if (target) onResume(target);
+  }, [detailSession, sessionRows, cursor, onResume]);
 
   useInput(
     (input, key) => {

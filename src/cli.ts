@@ -115,13 +115,7 @@ program
     const { index } = await loadFreshIndex();
     const session = findSession(index, sessionId);
     process.stdout.write(`Resuming session ${session.id} in ${session.projectPath}...\n`);
-    try {
-      await resumeSession(session);
-      process.exit(0);
-    } catch (err) {
-      console.error(c.red(`[csm] ${(err as Error).message}`));
-      process.exit(1);
-    }
+    resumeSession(session);
   });
 
 // ─── rm (delete) ────────────────────────────────────────────────────────────
