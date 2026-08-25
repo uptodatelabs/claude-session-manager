@@ -14,18 +14,27 @@ import type { SessionInfo } from './types.js';
 
 // ─── Resume ─────────────────────────────────────────────────────────────────
 
+/** Candidate executable names for the `claude` CLI, most specific first. */
+function claudeCandidates(platform: NodeJS.Platform): string[] {
+  if (platform === 'win32') {
+    return ['claude.cmd', 'claude.bat', 'claude.exe', 'claude'];
+  }
+  return ['claude'];
+}
+
 /** Resolve the `claude` binary path from PATH. */
 export function claudeBinary(): string {
   const { env, platform } = process;
-  const name = platform === 'win32' ? 'claude.cmd' : 'claude';
   const pathDirs = (env.PATH ?? '').split(path.delimiter);
   for (const dir of pathDirs) {
     if (!dir) continue;
-    try {
-      const full = path.join(dir, name);
-      if (fs.existsSync(full)) return full;
-    } catch {
-      // Skip inaccessible paths.
+    for (const name of claudeCandidates(platform)) {
+      try {
+        const full = path.join(dir, name);
+        if (fs.existsSync(full)) return full;
+      } catch {
+        // Skip inaccessible paths.
+      }
     }
   }
   return 'claude';
@@ -45,11 +54,14 @@ export function resumeSession(session: SessionInfo): void {
     );
   }
   const binary = claudeBinary();
+  // A native executable (claude.exe) can be spawned directly; only a `.cmd` /
+  // `.bat` shim needs a shell to run through cmd.exe.
+  const needsShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(binary);
   const args = ['-r', session.id];
   const child = spawn(binary, args, {
     cwd,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: needsShell,
   });
   child.on('error', (err) => {
     console.error(`[csm] Failed to launch Claude: ${err.message}`);

@@ -37,10 +37,15 @@ afterEach(async () => {
 });
 
 describe('claudeBinary', () => {
-  it('resolves to a non-empty string', () => {
+  it('resolves to a claude binary that exists when a path is found', () => {
     const bin = claudeBinary();
     expect(bin.length).toBeGreaterThan(0);
-    expect(bin).toContain('claude');
+    expect(bin.toLowerCase()).toContain('claude');
+    // When resolved from PATH it should be an existing file; the bare 'claude'
+    // fallback is only used when nothing could be found on PATH.
+    if (bin.includes('/') || bin.includes('\\')) {
+      expect(existsSync(bin)).toBe(true);
+    }
   });
 });
 
