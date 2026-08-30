@@ -34,6 +34,11 @@ export function trashDir(): string {
   return path.join(stateDir(), 'trash');
 }
 
+/** Default directory where `csm backup` archives are written. */
+export function backupsDir(): string {
+  return path.join(stateDir(), 'backups');
+}
+
 export function logDir(): string {
   return path.join(stateDir(), 'logs');
 }
@@ -119,7 +124,7 @@ export async function extractProjectPathFromFile(filePath: string): Promise<stri
 
 /** Ensure the state directory (and subdirectories) exist. */
 export function ensureStateDir(): void {
-  for (const dir of [stateDir(), trashDir(), logDir()]) {
+  for (const dir of [stateDir(), trashDir(), logDir(), backupsDir()]) {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   }
 }

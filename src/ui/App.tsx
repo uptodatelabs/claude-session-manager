@@ -4,12 +4,21 @@ import TextInput from 'ink-text-input';
 import { ListView } from './ListView.js';
 import { DetailView } from './DetailView.js';
 import { StatsView } from './StatsView.js';
+import { RestoreView } from './RestoreView.js';
 import { Dim } from './Dim.js';
 import { theme } from './theme.js';
-import { deleteSession } from '../core/actions.js';
+import {
+  deleteSession,
+  backupSingleSession,
+  listBackupArchives,
+  restoreBackup,
+  type BackupArchive,
+} from '../core/actions.js';
+import { backupsDir } from '../core/paths.js';
+import { loadFreshIndex } from '../utils/io.js';
 import type { IndexData, SessionInfo } from '../core/types.js';
 
-export type View = 'list' | 'detail' | 'stats';
+export type View = 'list' | 'detail' | 'stats' | 'restore';
 
 interface AppProps {
   initialIndex: IndexData;
@@ -75,6 +84,9 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
   const [detailId, setDetailId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [archives, setArchives] = useState<BackupArchive[]>([]);
+  const [restoreCursor, setRestoreCursor] = useState(0);
+  const [confirmRestore, setConfirmRestore] = useState(false);
 
   const filtered = useMemo(() => filterSessions(sessions, query), [sessions, query]);
   const rows = useMemo(() => buildRows(filtered), [filtered]);
@@ -131,6 +143,50 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
     if (target) onResume(target);
   }, [detailSession, sessionRows, cursor, onResume]);
 
+  /** Back up the selected (or detail) session to the default backups dir. */
+  const handleBackup = useCallback(async () => {
+    const target = detailSession ?? sessionRows[cursor]?.session;
+    if (!target) return;
+    flash('Backing up…');
+    try {
+      const archive = await backupSingleSession(target, backupsDir());
+      flash(`Backed up → ${archive}`);
+    } catch (err) {
+      flash(`Backup failed: ${(err as Error).message}`);
+    }
+  }, [detailSession, sessionRows, cursor, flash]);
+
+  /** Open the restore picker, loading archives from the backups dir. */
+  const openRestore = useCallback(async () => {
+    setView('restore');
+    setRestoreCursor(0);
+    setConfirmRestore(false);
+    const list = await listBackupArchives();
+    setArchives(list);
+  }, []);
+
+  /** Restore the highlighted archive (Enter twice to confirm), then refresh. */
+  const handleRestore = useCallback(async () => {
+    const target = archives[restoreCursor];
+    if (!target) return;
+    if (!confirmRestore) {
+      setConfirmRestore(true);
+      flash('Press Enter again to confirm restore');
+      return;
+    }
+    setConfirmRestore(false);
+    flash('Restoring…');
+    try {
+      const restored = await restoreBackup(target.path);
+      const { index } = await loadFreshIndex();
+      setSessions(Object.values(index.sessions));
+      flash(`Restored ${restored.length} session(s)`);
+      setView('list');
+    } catch (err) {
+      flash(`Restore failed: ${(err as Error).message}`);
+    }
+  }, [archives, restoreCursor, confirmRestore, flash]);
+
   useInput(
     (input, key) => {
       // ── Search input mode ──────────────────────────────────────────────
@@ -152,7 +208,7 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
         } else if (input === 'd') {
           handleDelete();
         } else if (input === 'b') {
-          flash('Backup from TUI: use `csm backup <id>` in the terminal.');
+          void handleBackup();
         }
         return;
       }
@@ -160,6 +216,16 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
       // ── Stats view keys ────────────────────────────────────────────────
       if (view === 'stats') {
         if (key.escape || input === 'q' || key.leftArrow) setView('list');
+        return;
+      }
+
+      // ── Restore picker keys ────────────────────────────────────────────
+      if (view === 'restore') {
+        if (key.escape || input === 'q') setView('list');
+        else if (key.upArrow || input === 'k') setRestoreCursor((c) => Math.max(0, c - 1));
+        else if (key.downArrow || input === 'j')
+          setRestoreCursor((c) => Math.min(archives.length - 1, c + 1));
+        else if (key.return) void handleRestore();
         return;
       }
 
@@ -174,6 +240,8 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
       else if (input === 's') setView('stats');
       else if (input === 'r') handleResume();
       else if (input === 'd') handleDelete();
+      else if (input === 'b') void handleBackup();
+      else if (input === 'R') void openRestore();
       else if (key.return) {
         const target = sessionRows[cursor];
         if (target) {
@@ -203,6 +271,9 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
         )}
         {view === 'detail' && detailSession && <DetailView session={detailSession} />}
         {view === 'stats' && <StatsView sessions={sessions} onBack={() => setView('list')} />}
+        {view === 'restore' && (
+          <RestoreView archives={archives} cursor={restoreCursor} confirm={confirmRestore} />
+        )}
       </Box>
 
       <Toast message={toast} />
@@ -261,10 +332,12 @@ function Footer(props: { view: View; searching: boolean }): React.ReactElement {
   if (props.searching) return <Box height={1} />;
   const binds =
     props.view === 'list'
-      ? '↑/↓ navigate  / search  Enter view  r resume  d delete  s stats  q quit'
+      ? '↑/↓ navigate  / search  Enter view  r resume  b backup  R restore  d delete  s stats  q quit'
       : props.view === 'detail'
-        ? 'r resume  d delete  Esc back  q quit'
-        : 'Esc back  q quit';
+        ? 'r resume  b backup  d delete  Esc back  q quit'
+        : props.view === 'restore'
+          ? '↑/↓ select  Enter restore (press twice)  Esc back'
+          : 'Esc back  q quit';
   return (
     <Box paddingX={1} paddingBottom={1}>
       <Dim>{binds}</Dim>

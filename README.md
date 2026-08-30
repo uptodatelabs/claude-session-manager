@@ -96,10 +96,17 @@ where the conversation left off.
 | `/` | Search (Enter applies, Esc cancels) |
 | `Enter` | Open session detail |
 | `r` | Resume selected session |
+| `b` | Back up selected session to `~/.claude-session-manager/backups/` |
+| `R` | Open the restore picker (list backup archives) |
 | `d` `d` | Delete (press twice to confirm) |
 | `s` | Token statistics view |
 | `Esc` | Back / cancel |
 | `q` | Quit |
+
+In the restore picker, navigate with `↑`/`↓`, press `Enter` twice to restore the
+highlighted archive (existing session files are overwritten), then the session
+list refreshes automatically. Path remapping (`--remap`) is available only via
+the CLI.
 
 ### Data & storage
 
@@ -266,10 +273,14 @@ csm list -n 10   # 최근 10개만
 | `/` | 검색 (Enter 적용, Esc 취소) |
 | `Enter` | 세션 상세 보기 |
 | `r` | 선택한 세션 resume |
+| `b` | 선택한 세션을 `~/.claude-session-manager/backups/`에 백업 |
+| `R` | 복원 선택기 열기 (백업 아카이브 목록) |
 | `d` `d` | 삭제 (두 번 눌러 확인) |
 | `s` | 토큰 통계 화면 |
 | `Esc` | 뒤로 가기 / 취소 |
 | `q` | 종료 |
+
+복원 선택기에서는 `↑`/`↓`로 이동하고 `Enter`를 두 번 눌러 선택한 아카이브를 복원합니다 (기존 세션 파일은 덮어쓰기됨). 복원 후 세션 목록이 자동으로 갱신됩니다. 경로 재매핑(`--remap`)은 CLI에서만 지원합니다.
 
 ### 데이터 및 저장 위치
 

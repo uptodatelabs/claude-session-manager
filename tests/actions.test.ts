@@ -13,6 +13,7 @@ import {
   purgeTrashEntry,
   claudeBinary,
   resumeSession,
+  listBackupArchives,
 } from '../src/core/actions.js';
 import { scanProject } from '../src/core/scanner.js';
 import { writeSession, defaultSessionLines } from './helpers.js';
@@ -124,5 +125,27 @@ describe('trash', () => {
     await purgeTrashEntry(entry.trashId);
     expect(await listTrash()).toHaveLength(0);
     expect(existsSync(path.join(stateDir, 'trash', `${entry.trashId}.jsonl`))).toBe(false);
+  });
+});
+
+describe('listBackupArchives', () => {
+  it('lists .tar.gz files newest-first and ignores others', async () => {
+    const dir = path.join(tmpDir, 'archives');
+    await mkdtemp(dir).catch(() => undefined);
+    const { mkdir, writeFile, utimes } = await import('node:fs/promises');
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, 'old.tar.gz'), 'x');
+    await writeFile(path.join(dir, 'new.tar.gz'), 'yy');
+    await writeFile(path.join(dir, 'notes.txt'), 'ignore me');
+    const past = new Date(Date.now() - 60_000);
+    await utimes(path.join(dir, 'old.tar.gz'), past, past);
+
+    const list = await listBackupArchives(dir);
+    expect(list.map((a) => a.name)).toEqual(['new.tar.gz', 'old.tar.gz']);
+    expect(list[0]!.size).toBe(2);
+  });
+
+  it('returns empty for a missing directory', async () => {
+    expect(await listBackupArchives(path.join(tmpDir, 'nope'))).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { trashDir, stateDir, ensureStateDir, toSlug, claudeProjectsDir } from './paths.js';
+import { trashDir, stateDir, ensureStateDir, toSlug, claudeProjectsDir, backupsDir } from './paths.js';
 import type { SessionInfo } from './types.js';
 
 /**
@@ -251,6 +251,31 @@ export async function backupSessions(sessions: SessionInfo[], archive: string): 
   await create({ gzip: true, file: archive, cwd: tmpDir }, ['.']);
 
   await fs.promises.rm(tmpDir, { recursive: true, force: true });
+}
+
+/** A backup archive discovered on disk. */
+export interface BackupArchive {
+  path: string;
+  name: string;
+  mtimeMs: number;
+  size: number;
+}
+
+/** List `.tar.gz` backup archives in a directory (newest first). */
+export async function listBackupArchives(dir?: string): Promise<BackupArchive[]> {
+  const root = dir ?? backupsDir();
+  if (!fs.existsSync(root)) return [];
+  const names = await fs.promises.readdir(root).catch(() => [] as string[]);
+  const archives: BackupArchive[] = [];
+  for (const name of names) {
+    if (!name.endsWith('.tar.gz')) continue;
+    const full = path.join(root, name);
+    const stat = await fs.promises.stat(full).catch(() => undefined);
+    if (!stat?.isFile()) continue;
+    archives.push({ path: full, name, mtimeMs: stat.mtimeMs, size: stat.size });
+  }
+  archives.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return archives;
 }
 
 /** Backup a single session and return the archive path. */
