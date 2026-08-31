@@ -100,7 +100,7 @@ session('F--Github-Beta', `${M2}.jsonl`, [
 console.log('\n═══ A. 메타 명령어 ═══');
 {
   const v = run(['--version']);
-  check('--version에 프로그램·버전·회사 표시', v.code === 0 && v.out.trim() === 'csm v1.0.0 (uptodatelabs)', v.out.trim());
+  check('--version에 프로그램·버전·회사 표시', v.code === 0 && v.out.trim() === 'cshub v1.0.0 (uptodatelabs)', v.out.trim());
   const h = run(['--help']);
   check('--help 사용법 표시', h.out.includes('Usage') && h.out.includes('Commands'));
   const n = run([]);

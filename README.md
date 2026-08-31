@@ -1,4 +1,4 @@
-# Claude Session Manager (csm)
+# Claude Session Hub (cshub)
 
 [English](#-english) · [한국어](#-한국어)
 
@@ -29,40 +29,40 @@ conversations — from the command line or a fast keyboard-driven TUI.
 ### Install
 
 ```bash
-git clone https://github.com/uptodatelabs/claude-session-manager.git
-cd claude-session-manager
+git clone https://github.com/uptodatelabs/claude-session-hub.git
+cd claude-session-hub
 npm install
 npm run build
-npm link        # exposes the global `csm` command
+npm link        # exposes the global `cshub` command
 ```
 
 ### Quick start
 
 ```bash
-csm              # launch the interactive TUI
-csm list         # list sessions, newest first
-csm list -n 10   # only the 10 most recent
+cshub              # launch the interactive TUI
+cshub list         # list sessions, newest first
+cshub list -n 10   # only the 10 most recent
 ```
 
 ### CLI reference
 
 | Command | Description |
 |---------|-------------|
-| `csm` | Launch the TUI (default when run in a terminal) |
-| `csm list [-p <slug>] [-n <count>] [--json]` | List sessions, newest first |
-| `csm show <id> [--messages <n>] [--json]` | Session details plus recent messages |
-| `csm resume <id>` | Continue a session in Claude Code |
-| `csm rm <id>` | Move a session to the trash |
-| `csm trash list` | Show trashed sessions |
-| `csm trash restore <trash-id>` | Undo a deletion |
-| `csm trash purge <trash-id>` | Permanently delete a trashed session |
-| `csm stats [-p <slug>] [--json]` | Aggregate token usage |
-| `csm backup [<id>] [-p <slug>] [--all] [-o <dir>]` | Create a `.tar.gz` archive |
-| `csm restore <archive> [options]` | Restore sessions from an archive |
+| `cshub` | Launch the TUI (default when run in a terminal) |
+| `cshub list [-p <slug>] [-n <count>] [--json]` | List sessions, newest first |
+| `cshub show <id> [--messages <n>] [--json]` | Session details plus recent messages |
+| `cshub resume <id>` | Continue a session in Claude Code |
+| `cshub rm <id>` | Move a session to the trash |
+| `cshub trash list` | Show trashed sessions |
+| `cshub trash restore <trash-id>` | Undo a deletion |
+| `cshub trash purge <trash-id>` | Permanently delete a trashed session |
+| `cshub stats [-p <slug>] [--json]` | Aggregate token usage |
+| `cshub backup [<id>] [-p <slug>] [--all] [-o <dir>]` | Create a `.tar.gz` archive |
+| `cshub restore <archive> [options]` | Restore sessions from an archive |
 
-Session ids may be abbreviated to any unique prefix (e.g. `csm show 4f2a`).
+Session ids may be abbreviated to any unique prefix (e.g. `cshub show 4f2a`).
 
-#### `csm restore` options
+#### `cshub restore` options
 
 | Option | Description |
 |--------|-------------|
@@ -73,7 +73,7 @@ Session ids may be abbreviated to any unique prefix (e.g. `csm show 4f2a`).
 
 ### How resume works
 
-`csm resume <id>` reads the working directory recorded inside the session file
+`cshub resume <id>` reads the working directory recorded inside the session file
 and launches Claude there, so file operations and git context pick up exactly
 where the conversation left off.
 
@@ -156,10 +156,10 @@ session restore.
 
 ```bash
 # Machine A
-csm backup abc12345 -o ./backups
+cshub backup abc12345 -o ./backups
 
 # copy backups/*.tar.gz to machine B, then:
-csm restore ./backups/<archive>.tar.gz --remap /home/me/MyProject
+cshub restore ./backups/<archive>.tar.gz --remap /home/me/MyProject
 ```
 
 `--remap` rewrites every recorded working directory inside the session files
@@ -228,40 +228,40 @@ MIT
 ### 설치
 
 ```bash
-git clone https://github.com/uptodatelabs/claude-session-manager.git
-cd claude-session-manager
+git clone https://github.com/uptodatelabs/claude-session-hub.git
+cd claude-session-hub
 npm install
 npm run build
-npm link        # 전역 `csm` 명령어 생성
+npm link        # 전역 `cshub` 명령어 생성
 ```
 
 ### 빠른 시작
 
 ```bash
-csm              # 대화형 TUI 실행
-csm list         # 세션 목록 (최신순)
-csm list -n 10   # 최근 10개만
+cshub              # 대화형 TUI 실행
+cshub list         # 세션 목록 (최신순)
+cshub list -n 10   # 최근 10개만
 ```
 
 ### CLI 명령어
 
 | 명령어 | 설명 |
 |--------|------|
-| `csm` | TUI 실행 (터미널에서 실행 시 기본) |
-| `csm list [-p <slug>] [-n <count>] [--json]` | 세션 목록, 최신순 |
-| `csm show <id> [--messages <n>] [--json]` | 세션 상세 + 최근 메시지 |
-| `csm resume <id>` | Claude Code에서 세션 이어서 작업 |
-| `csm rm <id>` | 세션을 휴지통으로 이동 |
-| `csm trash list` | 휴지통 목록 조회 |
-| `csm trash restore <trash-id>` | 삭제 취소 (복원) |
-| `csm trash purge <trash-id>` | 휴지통에서 영구 삭제 |
-| `csm stats [-p <slug>] [--json]` | 토큰 사용량 집계 |
-| `csm backup [<id>] [-p <slug>] [--all] [-o <dir>]` | `.tar.gz` 백업 생성 |
-| `csm restore <archive> [options]` | 백업 아카이브에서 복원 |
+| `cshub` | TUI 실행 (터미널에서 실행 시 기본) |
+| `cshub list [-p <slug>] [-n <count>] [--json]` | 세션 목록, 최신순 |
+| `cshub show <id> [--messages <n>] [--json]` | 세션 상세 + 최근 메시지 |
+| `cshub resume <id>` | Claude Code에서 세션 이어서 작업 |
+| `cshub rm <id>` | 세션을 휴지통으로 이동 |
+| `cshub trash list` | 휴지통 목록 조회 |
+| `cshub trash restore <trash-id>` | 삭제 취소 (복원) |
+| `cshub trash purge <trash-id>` | 휴지통에서 영구 삭제 |
+| `cshub stats [-p <slug>] [--json]` | 토큰 사용량 집계 |
+| `cshub backup [<id>] [-p <slug>] [--all] [-o <dir>]` | `.tar.gz` 백업 생성 |
+| `cshub restore <archive> [options]` | 백업 아카이브에서 복원 |
 
-세션 ID는 고유하게 식별되는 범위까지 축약 가능합니다 (예: `csm show 4f2a`).
+세션 ID는 고유하게 식별되는 범위까지 축약 가능합니다 (예: `cshub show 4f2a`).
 
-#### `csm restore` 옵션
+#### `cshub restore` 옵션
 
 | 옵션 | 설명 |
 |------|------|
@@ -272,7 +272,7 @@ csm list -n 10   # 최근 10개만
 
 ### resume 동작 방식
 
-`csm resume <id>`는 세션 파일에 기록된 작업 디렉터리(`cwd`)를 읽어 그 위치에서 Claude를 실행합니다. 따라서 파일 작업과 git 컨텍스트가 대화가 끊겼던 지점 그대로 이어집니다.
+`cshub resume <id>`는 세션 파일에 기록된 작업 디렉터리(`cwd`)를 읽어 그 위치에서 Claude를 실행합니다. 따라서 파일 작업과 git 컨텍스트가 대화가 끊겼던 지점 그대로 이어집니다.
 
 - **macOS / Linux** — 같은 터미널에서 Claude 실행
 - **Windows** — Claude 전용 콘솔 창을 새로 열어 실행. 매니저와 네이티브 TUI 자식 프로세스가 하나의 콘솔을 공유하면 Claude가 입력을 받지 못하는 문제가 있어, 전용 창 방식을 사용합니다 (`claude -r <id>` 를 직접 입력한 것과 동일하게 동작)
@@ -337,10 +337,10 @@ csm list -n 10   # 최근 10개만
 
 ```bash
 # A 머신
-csm backup abc12345 -o ./backups
+cshub backup abc12345 -o ./backups
 
 # backups/*.tar.gz 를 B 머신으로 복사한 뒤:
-csm restore ./backups/<archive>.tar.gz --remap /home/me/MyProject
+cshub restore ./backups/<archive>.tar.gz --remap /home/me/MyProject
 ```
 
 `--remap`은 세션 파일 안의 모든 작업 디렉터리 기록을 새 위치로 다시 쓰고, 그 경로에서 파생된 슬러그 폴더에 배치합니다. 덕분에 B 머신에서도 `claude -r <id>` 가 정상 동작합니다.

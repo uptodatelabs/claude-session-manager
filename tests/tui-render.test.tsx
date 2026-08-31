@@ -95,7 +95,7 @@ describe('TUI rendering (mock streams)', () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(stdout.output).toContain('Alpha session');
     expect(stdout.output).toContain('Beta session');
-    expect(stdout.output).toContain('Claude Session Manager');
+    expect(stdout.output).toContain('Claude Session Hub');
     // Header brand: program name, version and company must be visible.
     expect(stdout.output).toContain('v1.0.0');
     expect(stdout.output).toContain('uptodatelabs');

@@ -9,14 +9,14 @@ import { tokensForSessions, buildProjectStats, sumTotals } from './core/stats.js
 import { resumeSession, deleteSession, listTrash, restoreFromTrash, purgeTrashEntry, backupSingleSession, backupSessions, restoreBackup, inspectBackup } from './core/actions.js';
 import { readLastMessages } from './core/reader.js';
 import { ensureStateDir, claudeProjectsDir } from './core/paths.js';
-import { BRAND } from './version.js';
+import { BRAND, PROGRAM_NAME } from './version.js';
 import type { SessionInfo } from './core/types.js';
 
 ensureStateDir();
 
 program
-  .name('csm')
-  .description('Claude Session Manager — browse, search, resume, backup & analyze Claude Code sessions')
+  .name(PROGRAM_NAME)
+  .description('Claude Session Hub — browse, search, resume, backup & analyze Claude Code sessions')
   .version(BRAND)
   .option('--json', 'output in JSON format (machine-readable)')
   .hook('preAction', async () => {
@@ -127,7 +127,7 @@ program
     const entry = await deleteSession(session);
     process.stdout.write(`Moved to trash: ${c.dim(entry.trashId)}\n`);
     process.stdout.write(`  Session: ${session.id}  Title: ${session.title}\n`);
-    process.stdout.write(`  Use \`csm trash restore ${entry.trashId}\` to undo.\n`);
+    process.stdout.write(`  Use \`cshub trash restore ${entry.trashId}\` to undo.\n`);
   });
 
 // ─── trash ──────────────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ if (process.argv.slice(2).length === 0) {
   }
 } else {
   program.parseAsync(process.argv).catch((err) => {
-    console.error(c.red(`[csm] error: ${err.message}`));
+    console.error(c.red(`[cshub] error: ${err.message}`));
     process.exit(1);
   });
 }

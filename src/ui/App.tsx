@@ -17,7 +17,7 @@ import {
 } from '../core/actions.js';
 import { backupsDir } from '../core/paths.js';
 import { loadFreshIndex } from '../utils/io.js';
-import { PROGRAM_VERSION, COMPANY } from '../version.js';
+import { PROGRAM_NAME, PROGRAM_VERSION, COMPANY } from '../version.js';
 import type { IndexData, SessionInfo } from '../core/types.js';
 
 export type View = 'list' | 'detail' | 'stats' | 'restore';
@@ -324,10 +324,10 @@ function Header(props: { count: number; total: number; view: View; scanned: numb
   return (
     <Box paddingX={1} paddingTop={1} paddingBottom={1}>
       <Text bold color={theme.primary}>
-        {'█'} csm
+        {'█'} {PROGRAM_NAME}
       </Text>
       <Text bold> v{PROGRAM_VERSION}</Text>
-      <Dim>  Claude Session Manager · {COMPANY}</Dim>
+      <Dim>  Claude Session Hub · {COMPANY}</Dim>
       <Box flexGrow={1} />
       <Dim>
         {props.view === 'list' ? `${props.count}/${props.total} sessions` : props.view}

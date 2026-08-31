@@ -92,7 +92,7 @@ export async function scanAll(rootDir?: string): Promise<IndexData> {
       sessions.push(...found);
     } catch (err) {
       // A single unreadable project should not abort the whole scan.
-      console.error(`[csm] warning: failed to scan project "${slug}": ${(err as Error).message}`);
+      console.error(`[cshub] warning: failed to scan project "${slug}": ${(err as Error).message}`);
     }
   }
   return buildIndexFromSessions(sessions);

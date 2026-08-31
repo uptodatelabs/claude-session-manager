@@ -1,12 +1,12 @@
 {
-  "name": "claude-session-manager",
+  "name": "claude-session-hub",
   "version": "1.0.0",
   "description": "Manage Claude Code sessions: browse, search, resume, delete, backup, and analyze",
   "author": "uptodatelabs",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "csm": "./dist/cli.js"
+    "cshub": "./dist/cli.js"
   },
   "files": [
     "dist"
@@ -16,12 +16,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uptodatelabs/claude-session-manager.git"
+    "url": "git+https://github.com/uptodatelabs/claude-session-hub.git"
   },
   "bugs": {
-    "url": "https://github.com/uptodatelabs/claude-session-manager/issues"
+    "url": "https://github.com/uptodatelabs/claude-session-hub/issues"
   },
-  "homepage": "https://github.com/uptodatelabs/claude-session-manager#readme",
+  "homepage": "https://github.com/uptodatelabs/claude-session-hub#readme",
   "keywords": [
     "claude",
     "claude-code",

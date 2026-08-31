@@ -37,7 +37,7 @@ async function handTerminalToClaude(
   try {
     resumeSession(session);
   } catch (err) {
-    console.error(`[csm] Cannot resume session: ${(err as Error).message}`);
+    console.error(`[cshub] Cannot resume session: ${(err as Error).message}`);
     process.exit(1);
   }
 }

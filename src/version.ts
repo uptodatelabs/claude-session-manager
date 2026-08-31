@@ -5,11 +5,19 @@ const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as {
   name: string;
   version: string;
+  bin?: string | Record<string, string>;
   author?: string | { name?: string };
 };
 
+/** The executable name is derived from package.json's bin field. */
+function binName(): string {
+  if (typeof pkg.bin === 'string') return pkg.name;
+  const keys = Object.keys(pkg.bin ?? {});
+  return keys[0] ?? pkg.name;
+}
+
 /** Program label shown in the UI and CLI output. */
-export const PROGRAM_NAME = 'csm';
+export const PROGRAM_NAME = binName();
 
 /** Package version — package.json is the single source of truth. */
 export const PROGRAM_VERSION = pkg.version;

@@ -89,7 +89,7 @@ export function resumeSession(session: SessionInfo): void {
     stdio: 'inherit',
   });
   child.on('error', (err) => {
-    console.error(`[csm] Failed to launch Claude: ${err.message}`);
+    console.error(`[cshub] Failed to launch Claude: ${err.message}`);
     process.exit(1);
   });
   child.on('exit', (code) => {
@@ -482,7 +482,7 @@ export async function restoreBackup(
   for (const entry of manifest.sessions) {
     const srcFile = path.join(tmpDir, entry.file);
     if (!fs.existsSync(srcFile)) {
-      console.error(`[csm] warning: missing file in archive: ${entry.file}`);
+      console.error(`[cshub] warning: missing file in archive: ${entry.file}`);
       continue;
     }
 
@@ -500,7 +500,7 @@ export async function restoreBackup(
 
     const destFile = path.join(destDir, `${entry.sessionId}.jsonl`);
     if (opts.skipExisting && fs.existsSync(destFile)) {
-      console.error(`[csm] skip: already exists ${destFile}`);
+      console.error(`[cshub] skip: already exists ${destFile}`);
       continue;
     }
 
@@ -543,7 +543,7 @@ export async function restoreBackup(
           await copyInto(src, dest);
           configFiles.push(dest);
         } catch (err) {
-          console.error(`[csm] warning: could not restore ${rel}: ${(err as Error).message}`);
+          console.error(`[cshub] warning: could not restore ${rel}: ${(err as Error).message}`);
         }
       }
     }
@@ -568,7 +568,7 @@ export async function restoreBackup(
           configFiles.push(dest);
         } catch (err) {
           // A config write must never abort the session restore.
-          console.error(`[csm] warning: could not restore ${rel}: ${(err as Error).message}`);
+          console.error(`[cshub] warning: could not restore ${rel}: ${(err as Error).message}`);
         }
       }
     }
@@ -584,7 +584,7 @@ export async function restoreBackup(
         await copyInto(src, dest);
         configFiles.push(dest);
       } catch (err) {
-        console.error(`[csm] warning: could not restore ${rel}: ${(err as Error).message}`);
+        console.error(`[cshub] warning: could not restore ${rel}: ${(err as Error).message}`);
       }
     }
   }
