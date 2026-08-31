@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "cshub": "./dist/cli.js"
+    "cshub": "dist/cli.js"
   },
   "files": [
     "dist"
