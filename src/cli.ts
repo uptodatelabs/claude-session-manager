@@ -279,7 +279,15 @@ program
       const manifest = await inspectBackup(archive);
       process.stdout.write(`\n  ${c.bold('Backup manifest')}\n`);
       process.stdout.write(`  Created: ${manifest.createdAt}\n`);
-      process.stdout.write(`  Sessions: ${manifest.sessions.length}\n\n`);
+      process.stdout.write(`  Sessions: ${manifest.sessions.length}\n`);
+      if (manifest.config) {
+        const cfgCount =
+          manifest.config.globalFiles.length +
+          manifest.config.projectConfigs.reduce((n, p) => n + p.files.length, 0) +
+          manifest.config.projectRoots.reduce((n, p) => n + p.files.length, 0);
+        process.stdout.write(`  Config files: ${cfgCount}\n`);
+      }
+      process.stdout.write('\n');
       for (const s of manifest.sessions) {
         process.stdout.write(`  ${s.sessionId}  ${truncate(s.title, 50)}  ${c.dim(s.projectSlug)}\n`);
         process.stdout.write(`    Original cwd: ${s.originalCwd}\n`);
@@ -294,9 +302,21 @@ program
       skipExisting: opts.skipExisting,
       outputDir: opts.output,
     });
-    process.stdout.write(`\n  ${c.bold('Restored')} ${restored.length} session(s)\n`);
-    for (const f of restored) {
+    process.stdout.write(`\n  ${c.bold('Restored')} ${restored.sessions.length} session(s)`);
+    if (restored.configFiles.length > 0) {
+      process.stdout.write(`, ${restored.configFiles.length} config file(s)`);
+    }
+    process.stdout.write('\n');
+    for (const f of restored.sessions) {
       process.stdout.write(`  ${c.dim(f)}\n`);
+    }
+    for (const f of restored.configFiles) {
+      process.stdout.write(`  ${c.dim('(config)')} ${c.dim(f)}\n`);
+    }
+    for (const slug of restored.skippedRoots) {
+      process.stdout.write(
+        `  ${c.yellow(`(skipped project-root config for "${slug}" — directory not found on this machine)`)}\n`,
+      );
     }
     process.stdout.write('\n');
   });

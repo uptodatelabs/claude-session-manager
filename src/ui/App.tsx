@@ -9,7 +9,8 @@ import { Dim } from './Dim.js';
 import { theme } from './theme.js';
 import {
   deleteSession,
-  backupSingleSession,
+  backupSessionToPath,
+  defaultBackupArchivePath,
   listBackupArchives,
   restoreBackup,
   type BackupArchive,
@@ -87,6 +88,8 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
   const [archives, setArchives] = useState<BackupArchive[]>([]);
   const [restoreCursor, setRestoreCursor] = useState(0);
   const [confirmRestore, setConfirmRestore] = useState(false);
+  // Backup confirmation: preview the exact archive path before writing it.
+  const [backupPreview, setBackupPreview] = useState<{ session: SessionInfo; path: string } | null>(null);
 
   const filtered = useMemo(() => filterSessions(sessions, query), [sessions, query]);
   const rows = useMemo(() => buildRows(filtered), [filtered]);
@@ -143,18 +146,29 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
     if (target) onResume(target);
   }, [detailSession, sessionRows, cursor, onResume]);
 
-  /** Back up the selected (or detail) session to the default backups dir. */
-  const handleBackup = useCallback(async () => {
+  /** Show the destination path and ask for confirmation before backing up. */
+  const askBackup = useCallback(() => {
     const target = detailSession ?? sessionRows[cursor]?.session;
     if (!target) return;
+    setBackupPreview({ session: target, path: defaultBackupArchivePath(target, backupsDir()) });
+  }, [detailSession, sessionRows, cursor]);
+
+  /** Execute the backup to the path shown in the confirmation prompt. */
+  const handleBackup = useCallback(async () => {
+    const preview = backupPreview;
+    if (!preview) return;
+    setBackupPreview(null);
     flash('Backing up…');
     try {
-      const archive = await backupSingleSession(target, backupsDir());
+      const archive = await backupSessionToPath(preview.session, preview.path);
       flash(`Backed up → ${archive}`);
     } catch (err) {
       flash(`Backup failed: ${(err as Error).message}`);
     }
-  }, [detailSession, sessionRows, cursor, flash]);
+  }, [backupPreview, flash]);
+
+  /** Cancel the pending backup confirmation. */
+  const cancelBackup = useCallback(() => setBackupPreview(null), []);
 
   /** Open the restore picker, loading archives from the backups dir. */
   const openRestore = useCallback(async () => {
@@ -180,7 +194,9 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
       const restored = await restoreBackup(target.path);
       const { index } = await loadFreshIndex();
       setSessions(Object.values(index.sessions));
-      flash(`Restored ${restored.length} session(s)`);
+      flash(
+        `Restored ${restored.sessions.length} session(s), ${restored.configFiles.length} config file(s)`,
+      );
       setView('list');
     } catch (err) {
       flash(`Restore failed: ${(err as Error).message}`);
@@ -198,6 +214,13 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
         return;
       }
 
+      // ── Backup confirmation (y/n) ──────────────────────────────────────
+      if (backupPreview) {
+        if (input === 'y') void handleBackup();
+        else if (input === 'n' || key.escape) cancelBackup();
+        return;
+      }
+
       // ── Detail view keys ───────────────────────────────────────────────
       if (view === 'detail') {
         if (key.escape || input === 'q' || key.leftArrow) {
@@ -208,7 +231,7 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
         } else if (input === 'd') {
           handleDelete();
         } else if (input === 'b') {
-          void handleBackup();
+          askBackup();
         }
         return;
       }
@@ -240,7 +263,7 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
       else if (input === 's') setView('stats');
       else if (input === 'r') handleResume();
       else if (input === 'd') handleDelete();
-      else if (input === 'b') void handleBackup();
+      else if (input === 'b') askBackup();
       else if (input === 'R') void openRestore();
       else if (key.return) {
         const target = sessionRows[cursor];
@@ -276,8 +299,22 @@ export function App({ initialIndex, scannedCount, onResume }: AppProps): React.R
         )}
       </Box>
 
+      {backupPreview && <BackupConfirm target={backupPreview} />}
       <Toast message={toast} />
       <Footer view={view} searching={searching} />
+    </Box>
+  );
+}
+
+/** Prompt shown before a backup writes anything: destination + y/n. */
+function BackupConfirm(props: { target: { session: SessionInfo; path: string } }): React.ReactElement {
+  return (
+    <Box flexDirection="column" paddingX={1}>
+      <Text color={theme.warn} bold>
+        Back up "{props.target.session.title}"?
+      </Text>
+      <Text> → {props.target.path}</Text>
+      <Dim>  includes session, project config (memory/CLAUDE.md), project-root files and global settings. y/n</Dim>
     </Box>
   );
 }

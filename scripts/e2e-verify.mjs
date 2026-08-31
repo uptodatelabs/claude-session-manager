@@ -34,7 +34,24 @@ const base = path.join(os.tmpdir(), 'csm-e2e-full');
 fs.rmSync(base, { recursive: true, force: true });
 const PROJECTS = path.join(base, 'projects');
 const STATE = path.join(base, 'state');
-const ISO = { CSM_PROJECTS_DIR: PROJECTS, CSM_STATE_DIR: STATE };
+const CONFIG = path.join(base, 'claude-config');
+const ISO = { CSM_PROJECTS_DIR: PROJECTS, CSM_STATE_DIR: STATE, CSM_CONFIG_DIR: CONFIG };
+
+// Global config fixture (~/.claude equivalent) + ~/.claude.json
+fs.mkdirSync(path.join(CONFIG, 'agents'), { recursive: true });
+fs.writeFileSync(path.join(CONFIG, 'settings.json'), '{"model":"test"}');
+fs.writeFileSync(path.join(CONFIG, 'CLAUDE.md'), '# global claude md');
+fs.writeFileSync(path.join(CONFIG, 'agents', 'helper.md'), 'helper agent');
+fs.writeFileSync(path.join(base, '.claude.json'), '{"global":true}');
+
+// Project-root fixtures for each project cwd (real dirs so config collection works)
+const ROOT_ALPHA = path.join(base, 'roots', 'F__Github_Alpha');
+const ROOT_BETA = path.join(base, 'roots', 'F__Github_Beta');
+for (const [p, root] of [['F:/Github/Alpha', ROOT_ALPHA], ['F:/Github/Beta', ROOT_BETA]]) {
+  fs.mkdirSync(path.join(root, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'CLAUDE.md'), `# root md for ${p}`);
+  fs.writeFileSync(path.join(root, '.claude', 'settings.json'), '{"local":true}');
+}
 
 function session(slugDirName, fileName, lines) {
   const dir = path.join(PROJECTS, slugDirName);
@@ -61,23 +78,23 @@ const M1 = '44444444-4444-4444-8444-000000000001';
 const M2 = '44444444-4444-4444-8444-000000000002';
 
 session('F--Github-Alpha', `${A1}.jsonl`, [
-  userLine(A1, 'alpha first request', '2026-08-01T10:00:00.000Z', 'F:/Github/Alpha', 'main', 'Alpha One'),
+  userLine(A1, 'alpha first request', '2026-08-01T10:00:00.000Z', ROOT_ALPHA.replaceAll('\\', '/'), 'main', 'Alpha One'),
   asstLine('2026-08-01T10:00:05.000Z', { input_tokens: 100, output_tokens: 50 }),
 ]);
 session('F--Github-Alpha', `${A2}.jsonl`, [
   '{this is malformed json',
-  userLine(A2, 'alpha second request', '2026-08-05T10:00:00.000Z', 'F:/Github/Alpha', 'dev', 'Alpha Two'),
+  userLine(A2, 'alpha second request', '2026-08-05T10:00:00.000Z', ROOT_ALPHA.replaceAll('\\', '/'), 'dev', 'Alpha Two'),
   asstLine('2026-08-05T10:00:05.000Z', { input_tokens: 200, output_tokens: 100 }),
 ]);
 session('F--Github-Beta', `${B1}.jsonl`, [
-  userLine(B1, 'beta request', '2026-08-10T10:00:00.000Z', 'F:/Github/Beta', 'main', 'Beta One'),
+  userLine(B1, 'beta request', '2026-08-10T10:00:00.000Z', ROOT_BETA.replaceAll('\\', '/'), 'main', 'Beta One'),
   asstLine('2026-08-10T10:00:05.000Z', { input_tokens: 10, output_tokens: 5 }),
 ]);
 session('F--Github-Beta', `${M1}.jsonl`, [
-  userLine(M1, 'amb one', '2026-07-01T10:00:00.000Z', 'F:/Github/Beta'),
+  userLine(M1, 'amb one', '2026-07-01T10:00:00.000Z', ROOT_BETA.replaceAll('\\', '/')),
 ]);
 session('F--Github-Beta', `${M2}.jsonl`, [
-  userLine(M2, 'amb two', '2026-07-02T10:00:00.000Z', 'F:/Github/Beta'),
+  userLine(M2, 'amb two', '2026-07-02T10:00:00.000Z', ROOT_BETA.replaceAll('\\', '/')),
 ]);
 
 console.log('\n═══ A. 메타 명령어 ═══');
@@ -190,14 +207,20 @@ console.log('\n═══ E. backup ═══');
 console.log('\n═══ F. restore (일반) ═══');
 {
   const dest = path.join(base, 'restored-plain');
-  const r = run(['restore', globalThis.__archiveAll, '-o', dest], ISO).code === 0
-    || run(['restore', globalThis.__archiveAll], { ...ISO, CSM_PROJECTS_DIR: dest }).code === 0;
-  check('복원 실행 성공', r);
+  const r = run(['restore', globalThis.__archiveAll, '-o', dest], ISO);
+  check('복원 실행 성공', r.code === 0);
 
   // 원본과 바이트 단위 동일한지 비교
   const src = path.join(PROJECTS, 'F--Github-Alpha', `${A1}.jsonl`);
   const dst = path.join(dest, 'F--Github-Alpha', `${A1}.jsonl`);
   check('파일 바이트 동일', fs.existsSync(dst) && fs.readFileSync(src).equals(fs.readFileSync(dst)));
+
+  // 설정 파일 복원: 전역 + 프로젝트 루트
+  check('전역 설정 복원', fs.existsSync(path.join(CONFIG, 'settings.json')));
+  check('전역 CLAUDE.md 복원', fs.existsSync(path.join(CONFIG, 'CLAUDE.md')));
+  check('~/.claude.json 복원', fs.existsSync(path.join(base, '.claude.json')));
+  check('프로젝트 루트 설정 복원', fs.existsSync(path.join(ROOT_ALPHA, 'CLAUDE.md')));
+  check('프로젝트 루트 .claude 복원', fs.existsSync(path.join(ROOT_ALPHA, '.claude', 'settings.json')));
 
   const bad = run(['restore', path.join(base, 'nonexistent.tar.gz')], ISO);
   check('없는 아카이브 → 오류', bad.code !== 0);
@@ -206,13 +229,18 @@ console.log('\n═══ F. restore (일반) ═══');
 console.log('\n═══ G. restore --remap ═══');
 {
   const dest = path.join(base, 'restored-remap');
-  const r = run(['restore', globalThis.__archiveAll, '-o', dest, '--remap', 'C:/Users/new/Remapped'], ISO);
+  const remapTarget = path.join(base, 'remapped', 'MyProj').replaceAll('\\', '/');
+  const slug = remapTarget.replace(/[^A-Za-z0-9-]/g, '-');
+  const r = run(['restore', globalThis.__archiveAll, '-o', dest, '--remap', remapTarget], ISO);
   check('remap 복원 성공', r.code === 0);
-  const remapped = path.join(dest, 'C--Users-new-Remapped', `${A1}.jsonl`);
+  const remapped = path.join(dest, slug, `${A1}.jsonl`);
   check('새 slug 폴더에 배치', fs.existsSync(remapped));
   if (fs.existsSync(remapped)) {
     const content = fs.readFileSync(remapped, 'utf8');
-    check('cwd 재기록됨', content.includes('C:/Users/new/Remapped') && !content.includes('F:/Github/Alpha'));
+    check(
+      'cwd 재기록됨',
+      content.includes(remapTarget) && !content.includes(ROOT_ALPHA.replaceAll('\\', '/')),
+    );
   }
 }
 

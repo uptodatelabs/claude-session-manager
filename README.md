@@ -17,7 +17,7 @@ conversations — from the command line or a fast keyboard-driven TUI.
 - **▶ Resume** — continue any finished session with `claude -r <id>`
 - **🗑 Delete** — move sessions to a trash folder (restorable), or purge them
 - **📊 Stats** — token usage per session / project / global (input, output, cache)
-- **💾 Backup** — single session, whole project, or everything, as `.tar.gz`
+- **💾 Backup** — sessions **plus their configuration** (project memory, project-root `CLAUDE.md`/`.claude/`, global settings) as `.tar.gz`
 - **📂 Restore** — extract archives anywhere, optionally remapping paths for cross-machine moves
 - **🖥 TUI** — full-screen Ink-based interface with keyboard navigation
 
@@ -96,7 +96,7 @@ where the conversation left off.
 | `/` | Search (Enter applies, Esc cancels) |
 | `Enter` | Open session detail |
 | `r` | Resume selected session |
-| `b` | Back up selected session to `~/.claude-session-manager/backups/` |
+| `b` | Back up selected session — shows the destination path and asks `y/n` first |
 | `R` | Open the restore picker (list backup archives) |
 | `d` `d` | Delete (press twice to confirm) |
 | `s` | Token statistics view |
@@ -131,6 +131,7 @@ Slugs are produced by Claude Code itself (every character outside
 |----------|---------|
 | `CSM_PROJECTS_DIR` | Override `~/.claude/projects` (testing, custom setups) |
 | `CSM_STATE_DIR` | Override `~/.claude-session-manager` |
+| `CSM_CONFIG_DIR` | Override `~/.claude` (global config root used by backup/restore) |
 
 ### Statistics notes
 
@@ -139,6 +140,19 @@ session (`input`, `output`, `cache_creation`, `cache_read`). There is no cost
 estimation — figures are exact, not modeled.
 
 ### Cross-machine backup & restore
+
+Every backup archive contains, alongside the session transcripts:
+
+| Archive folder | Contents | Restored to |
+|----------------|----------|-------------|
+| `sessions/<slug>/` | session `.jsonl` files | `<projects-dir>/<slug>/` |
+| `project-config/<slug>/` | `~/.claude/projects/<slug>/` state: `memory/`, `CLAUDE.md` | `<projects-dir>/<slug>/` |
+| `project-root/<slug>/` | `CLAUDE.md`, `AGENTS.md`, `.mcp.json`, `.claude/**` from each session's working directory | the working directory (or the `--remap` target) |
+| `global/` | `~/.claude/CLAUDE.md`, `settings.json`, `agents/`, `skills/`, `commands/`, `output-styles/`, `~/.claude.json` | the global config root |
+
+Project-root files are only written when the target directory exists locally
+(or when `--remap` names it), and a failed config write never aborts the
+session restore.
 
 ```bash
 # Machine A
@@ -180,8 +194,9 @@ tests/        # unit tests + fixtures
 
 - Interactive TUI behaviour is verified through rendering tests; automated
   end-to-end keypress testing requires a real pseudo-terminal.
-- Backups contain session `.jsonl` files only — project memory directories are
-  not included.
+- Backups capture whitelisted config files only (memory, CLAUDE.md, AGENTS.md,
+  .mcp.json, .claude/, settings, agents, skills, commands, output-styles) —
+  runtime data such as plugins, todos and shell history is not included.
 - On Windows, resuming opens a separate console window (see above).
 
 ### License
@@ -201,7 +216,7 @@ MIT
 - **▶ 재개** — 완료된 세션을 `claude -r <id>` 로 이어서 작업
 - **🗑 삭제** — 휴지통 이동(복구 가능) 또는 영구 삭제
 - **📊 통계** — 세션/프로젝트/전체 토큰 사용량 (input, output, cache)
-- **💾 백업** — 단일 세션, 프로젝트 전체, 전체 세션을 `.tar.gz` 로 보관
+- **💾 백업** — 세션 **및 그 설정**까지 `.tar.gz` 로 보관 (프로젝트 메모리, 프로젝트 루트 `CLAUDE.md`/`.claude/`, 전역 설정)
 - **📂 복원** — 어디든 추출 가능, `--remap` 으로 다른 머신 이동 시 경로 재매핑
 - **🖥 TUI** — Ink 기반 전체 화면 인터페이스, 키보드 조작
 
@@ -273,7 +288,7 @@ csm list -n 10   # 최근 10개만
 | `/` | 검색 (Enter 적용, Esc 취소) |
 | `Enter` | 세션 상세 보기 |
 | `r` | 선택한 세션 resume |
-| `b` | 선택한 세션을 `~/.claude-session-manager/backups/`에 백업 |
+| `b` | 선택한 세션 백업 — 먼저 대상 경로를 보여주고 `y/n` 확인 |
 | `R` | 복원 선택기 열기 (백업 아카이브 목록) |
 | `d` `d` | 삭제 (두 번 눌러 확인) |
 | `s` | 토큰 통계 화면 |
@@ -301,12 +316,24 @@ csm list -n 10   # 최근 10개만
 |------|------|
 | `CSM_PROJECTS_DIR` | `~/.claude/projects` 대체 (테스트, 커스텀 환경) |
 | `CSM_STATE_DIR` | `~/.claude-session-manager` 대체 |
+| `CSM_CONFIG_DIR` | `~/.claude` 대체 (백업/복원이 사용하는 전역 설정 루트) |
 
 ### 통계 참고 사항
 
 토큰 수치는 세션 파일에 기록된 `usage` 필드(input, output, cache_creation, cache_read)를 직접 합산한 값입니다. 비용 추정은 하지 않으며, 수치는 정확한 값입니다.
 
 ### 머신 간 백업 & 복원
+
+백업 아카이브에는 세션 파일과 함께 다음이 포함됩니다:
+
+| 아카이브 폴더 | 내용 | 복원 위치 |
+|---------------|------|-----------|
+| `sessions/<slug>/` | 세션 `.jsonl` 파일 | `<projects-dir>/<slug>/` |
+| `project-config/<slug>/` | `~/.claude/projects/<slug>/` 상태: `memory/`, `CLAUDE.md` | `<projects-dir>/<slug>/` |
+| `project-root/<slug>/` | 세션 작업 디렉터리의 `CLAUDE.md`, `AGENTS.md`, `.mcp.json`, `.claude/**` | 작업 디렉터리 (또는 `--remap` 대상) |
+| `global/` | `~/.claude/CLAUDE.md`, `settings.json`, `agents/`, `skills/`, `commands/`, `output-styles/`, `~/.claude.json` | 전역 설정 루트 |
+
+프로젝트 루트 파일은 대상 디렉터리가 로컬에 존재할 때(또는 `--remap` 으로 지정될 때)만 기록되며, 설정 파일 복원에 실패해도 세션 복원은 계속 진행됩니다.
 
 ```bash
 # A 머신
@@ -345,7 +372,7 @@ tests/        # 단위 테스트 + 픽스처
 ### 알려진 제약
 
 - TUI 인터랙티브 동작은 렌더링 테스트로 검증합니다. 실제 키 입력 E2E에는 실제 PTY가 필요합니다.
-- 백업에는 세션 `.jsonl` 파일만 포함되며, 프로젝트 메모리 디렉터리는 포함되지 않습니다.
+- 백업은 화이트리스트에 있는 설정 파일만 포함합니다 (memory, CLAUDE.md, AGENTS.md, .mcp.json, .claude/, settings, agents, skills, commands, output-styles). plugins·todos·셸 히스토리 같은 런타임 데이터는 제외됩니다.
 - Windows에서는 resume 시 별도 콘솔 창이 열립니다 (위 설명 참고).
 
 ### 라이선스

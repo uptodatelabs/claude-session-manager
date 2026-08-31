@@ -19,6 +19,22 @@ export function claudeProjectsDir(): string {
   return path.join(os.homedir(), '.claude', 'projects');
 }
 
+/**
+ * Claude's global config directory (~/.claude) — holds CLAUDE.md,
+ * settings.json, agents/, skills/, commands/ and friends.
+ * CSM_CONFIG_DIR overrides it (used by tests and custom setups).
+ */
+export function claudeConfigDir(): string {
+  const override = process.env.CSM_CONFIG_DIR;
+  if (override) return path.resolve(override);
+  return path.join(os.homedir(), '.claude');
+}
+
+/** Path of the top-level ~/.claude.json config file (sits next to ~/.claude). */
+export function claudeJsonPath(): string {
+  return path.join(path.dirname(claudeConfigDir()), '.claude.json');
+}
+
 /** Directory used by this tool for its own state (index, trash, logs). */
 export function stateDir(): string {
   const override = process.env.CSM_STATE_DIR;
