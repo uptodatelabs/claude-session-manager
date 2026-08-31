@@ -96,6 +96,9 @@ describe('TUI rendering (mock streams)', () => {
     expect(stdout.output).toContain('Alpha session');
     expect(stdout.output).toContain('Beta session');
     expect(stdout.output).toContain('Claude Session Manager');
+    // Header brand: program name, version and company must be visible.
+    expect(stdout.output).toContain('v1.0.0');
+    expect(stdout.output).toContain('uptodatelabs');
     app.unmount();
   });
 });

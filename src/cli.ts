@@ -2,7 +2,6 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import { program } from 'commander';
 import { loadFreshIndex, findSession } from './utils/io.js';
 import { c, formatSize, formatTokens, formatRelative, formatDateTime, truncate } from './utils/format.js';
@@ -10,17 +9,15 @@ import { tokensForSessions, buildProjectStats, sumTotals } from './core/stats.js
 import { resumeSession, deleteSession, listTrash, restoreFromTrash, purgeTrashEntry, backupSingleSession, backupSessions, restoreBackup, inspectBackup } from './core/actions.js';
 import { readLastMessages } from './core/reader.js';
 import { ensureStateDir, claudeProjectsDir } from './core/paths.js';
+import { BRAND } from './version.js';
 import type { SessionInfo } from './core/types.js';
-
-const require = createRequire(import.meta.url);
-const pkg = require('../package.json') as { version: string };
 
 ensureStateDir();
 
 program
   .name('csm')
   .description('Claude Session Manager — browse, search, resume, backup & analyze Claude Code sessions')
-  .version(pkg.version)
+  .version(BRAND)
   .option('--json', 'output in JSON format (machine-readable)')
   .hook('preAction', async () => {
     // Pre-action hook available for future use.
